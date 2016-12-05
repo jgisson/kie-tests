@@ -1,0 +1,10 @@
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+
+    <kbase name="defaultKieBase" packages="jgisson.kie.tests.*" default="true">
+        <ksession name="defaultKieSession" type="stateful" default="true" clockType="realtime" scope="javax.enterprise.context.ApplicationScoped">
+        </ksession>
+        <ksession name="defaultStatelessKieSession" type="stateless" default="true" clockType="realtime" scope="javax.enterprise.context.ApplicationScoped">
+        </ksession>
+    </kbase>
+
+</kmodule>
