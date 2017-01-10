@@ -18,13 +18,14 @@ import org.kie.api.task.model.Status;
 import org.kie.api.task.model.Task;
 import org.kie.api.task.model.TaskSummary;
 
+import jgisson.kie.tests.commands.MyForwardTaskCommand;
 import jgisson.kie.tests.event.MyProcessEventListener;
 
 /**
  * Tests User Task assigment
  * 
  * @see usergroups.properties in test resources file for users and groups list
- *  
+ * 
  * @author jgisson
  *
  */
@@ -36,9 +37,12 @@ public class UserTaskAssignmentTest extends AbstractProcessTest {
     private static final String USER_TASK_1 = "User Task 1";
     private static final String USER_TASK_2 = "User Task 2";
 
+    // User in group GROUP1, GROUP2
     private static final String USER_ID = "john";
-    private static final String SUPER_USER_ID = "totoro";
+    // User in group GROUP1
     private static final String FORWARD_USER_ID = "mary";
+    // User in group GROUP3
+    private static final String USER_BOB_ID = "bob";
 
     private static final String DEFAULT_GROUP = "GROUP1";
     private static final String FORWARD_GROUP = "GROUP3";
@@ -53,7 +57,7 @@ public class UserTaskAssignmentTest extends AbstractProcessTest {
     @Test
     public void defaultUserTaskAssignment() {
         System.out.println("Start User Task default assignment test ...");
-        
+
         createRuntimeManager(PROCESS_FILE);
         RuntimeEngine engine = getRuntimeEngine();
         KieSession ksession = engine.getKieSession();
@@ -94,7 +98,7 @@ public class UserTaskAssignmentTest extends AbstractProcessTest {
     @Test
     public void forwardUserTaskAssignment() {
         System.out.println("Start User Task forward assignment test ...");
-        
+
         createRuntimeManager(PROCESS_FILE);
         RuntimeEngine engine = getRuntimeEngine();
         KieSession ksession = engine.getKieSession();
@@ -142,10 +146,63 @@ public class UserTaskAssignmentTest extends AbstractProcessTest {
         // Just complete User Task 2
         taskService.start(task.getId(), USER_ID);
         taskService.complete(task.getId(), USER_ID, null);
-        
+
         assertProcessInstanceCompleted(pi.getId());
 
         System.out.println("User Task forward assignment test done.");
+    }
+
+    @Test
+    public void myForwardUserTaskAssignment() {
+        System.out.println("Start User Task users and groups management for User Task test ...");
+
+        createRuntimeManager(PROCESS_FILE);
+        RuntimeEngine engine = getRuntimeEngine();
+        KieSession ksession = engine.getKieSession();
+        ksession.addEventListener(new MyProcessEventListener());
+
+        // Get TaskService
+        TaskService taskService = engine.getTaskService();
+
+        // Start process
+        ProcessInstance pi = startProcess(ksession);
+        assertNodeActive(pi.getId(), ksession, USER_TASK_1);
+
+        // Assign "User Task 1" to "GROUP2" and "GROUP3" instead of user "john"
+        List<TaskSummary> actualTasks = taskService.getTasksByStatusByProcessInstanceId(pi.getId(), TASK_STATUS_WORKING, null);
+        Task task = taskService.getTaskById(actualTasks.get(0).getId());
+        displayUserTaskInfos(task);
+        assertEquals(task.getName(), USER_TASK_1);
+        List<String> groups = Arrays.asList("GROUP2", "GROUP3");
+        taskService.execute(new MyForwardTaskCommand(task.getId(), groups));
+        task = taskService.getTaskById(task.getId());
+        displayUserTaskInfos(task);
+        // Start and complete "User Task 1" with user in group GROUP3
+        taskService.start(task.getId(), USER_BOB_ID);
+        taskService.complete(task.getId(), USER_BOB_ID, null);
+
+        // Assign "User Task 1" to "GROUP3" instead of group "GROUP1"
+        // User in GROUP1 has a task
+        List<TaskSummary> potentialsTasks = taskService.getTasksAssignedAsPotentialOwner(USER_ID, null);
+        Assert.assertEquals(1, potentialsTasks.size());
+        actualTasks = taskService.getTasksByStatusByProcessInstanceId(pi.getId(), TASK_STATUS_WORKING, null);
+        task = taskService.getTaskById(actualTasks.get(0).getId());
+        displayUserTaskInfos(task);
+        assertEquals(task.getName(), USER_TASK_2);
+        List<String> usertaskTwoGroups = Arrays.asList(FORWARD_GROUP);
+        taskService.execute(new MyForwardTaskCommand(task.getId(), usertaskTwoGroups));
+        task = taskService.getTaskById(task.getId());
+        displayUserTaskInfos(task);
+        // User in GROUP1 hasn't task
+        potentialsTasks = taskService.getTasksAssignedAsPotentialOwner(USER_ID, null);
+        Assert.assertEquals(0, potentialsTasks.size());
+        // Just complete User Task 2 with user in group GROUP3
+        taskService.start(task.getId(), USER_BOB_ID);
+        taskService.complete(task.getId(), USER_BOB_ID, null);
+
+        assertProcessInstanceCompleted(pi.getId());
+
+        System.out.println("Manage users and groups for User Task test done.");
     }
 
     private ProcessInstance startProcess(KieSession ksession) {
