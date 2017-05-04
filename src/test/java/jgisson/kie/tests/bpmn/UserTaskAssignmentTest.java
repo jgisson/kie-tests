@@ -44,7 +44,6 @@ public class UserTaskAssignmentTest extends AbstractProcessTest {
     // User in group GROUP3
     private static final String USER_BOB_ID = "bob";
 
-    private static final String DEFAULT_GROUP = "GROUP1";
     private static final String FORWARD_GROUP = "GROUP3";
 
     private static final List<Status> TASK_STATUS_WORKING =
