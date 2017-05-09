@@ -1,0 +1,48 @@
+//created on: 9 mai 2017
+package jgisson.kie.tests.bpmn
+
+//list any import classes here.
+import java.util.HashMap;
+import java.util.Map;
+
+import org.kie.api.runtime.process.WorkflowProcessInstance;
+import org.kie.api.runtime.KieRuntime;
+import org.jbpm.workflow.instance.node.DynamicNodeInstance;
+import org.jbpm.workflow.instance.node.DynamicUtils;
+import org.jbpm.workflow.core.impl.NodeImpl;
+
+
+/*
+ * AdHoc sub process rules
+ */
+
+rule "Init AdHoc task auto"
+salience 100
+ruleflow-group "AdHoc"
+when
+    wf: WorkflowProcessInstance()
+    eval(wf.getVariable("caseEvaluation") == null)
+then
+    System.out.println("rule activated: " + drools.getRule().getName());
+    kcontext.getKnowledgeRuntime().signalEvent("Task User 1", null, wf.getId());
+end
+
+rule "To User Task 2 rule"
+ruleflow-group "AdHoc"
+when
+    wf: WorkflowProcessInstance()
+    eval("TO_USER_TASK_2".equals(wf.getVariable("caseEvaluation")))
+then
+    System.out.println("rule activated: " + drools.getRule().getName());
+    kcontext.getKnowledgeRuntime().signalEvent("Task User 2", null, wf.getId());
+end
+
+rule "To User Task 3 rule"
+ruleflow-group "AdHoc"
+when
+    wf: WorkflowProcessInstance()
+    eval("TO_USER_TASK_3".equals(wf.getVariable("caseEvaluation")))
+then
+    System.out.println("rule activated: " + drools.getRule().getName());
+    kcontext.getKnowledgeRuntime().signalEvent("To User Task 3", null, wf.getId());
+end
